@@ -1,0 +1,19 @@
+{
+  "name": "reflecting-avatar",
+  "version": "1.0.0",
+  "description": "Reflects input from webcam onto virtual avatar",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Foxino/reflecting-avatar.git"
+  },
+  "author": "Paul Crossley",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Foxino/reflecting-avatar/issues"
+  },
+  "homepage": "https://github.com/Foxino/reflecting-avatar#readme"
+}

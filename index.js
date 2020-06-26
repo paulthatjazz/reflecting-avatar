@@ -52,7 +52,7 @@ function drawPath(ctx, points, closePath) {
 let model, ctx, videoWidth, videoHeight, video, canvas,
     scatterGLHasInitialized = false, scatterGL;
 
-const VIDEO_SIZE = 500;
+const VIDEO_SIZE = 300;
 const mobile = isMobile();
 // Don't render the point cloud on mobile in order to maximize performance and
 // to avoid crowding limited screen space.
@@ -61,32 +61,11 @@ const stats = new Stats();
 const state = {
   backend: 'wasm',
   maxFaces: 1,
-  triangulateMesh: true
+  triangulateMesh: false
 };
 
 if (renderPointcloud) {
   state.renderPointcloud = true;
-}
-
-function setupDatGui() {
-  const gui = new dat.GUI();
-  gui.add(state, 'backend', ['wasm', 'webgl', 'cpu'])
-      .onChange(async backend => {
-        await tf.setBackend(backend);
-      });
-
-  gui.add(state, 'maxFaces', 1, 20, 1).onChange(async val => {
-    model = await facemesh.load({maxFaces: val});
-  });
-
-  gui.add(state, 'triangulateMesh');
-
-  if (renderPointcloud) {
-    gui.add(state, 'renderPointcloud').onChange(render => {
-      document.querySelector('#scatter-gl-container').style.display =
-          render ? 'inline-block' : 'none';
-    });
-  }
 }
 
 async function setupCamera() {
@@ -170,7 +149,6 @@ async function renderPrediction() {
 
 async function main() {
   await tf.setBackend(state.backend);
-  setupDatGui();
 
   stats.showPanel(0);  // 0: fps, 1: ms, 2: mb, 3+: custom
   document.getElementById('main').appendChild(stats.dom);
@@ -191,21 +169,13 @@ async function main() {
   ctx = canvas.getContext('2d');
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
-  ctx.fillStyle = '#32EEDB';
+  ctx.fillStyle = 'yellow';
   ctx.strokeStyle = '#32EEDB';
   ctx.lineWidth = 0.5;
 
   model = await facemesh.load({maxFaces: state.maxFaces});
   renderPrediction();
 
-  if (renderPointcloud) {
-    document.querySelector('#scatter-gl-container').style =
-        `width: ${VIDEO_SIZE}px; height: ${VIDEO_SIZE}px;`;
-
-    scatterGL = new ScatterGL(
-        document.querySelector('#scatter-gl-container'),
-        {'rotateOnStart': false, 'selectEnabled': false});
-  }
 };
 
 main();

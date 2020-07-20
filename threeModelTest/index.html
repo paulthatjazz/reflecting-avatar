@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>THREEJS MODEL</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r92/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        body{
+            margin: 0;
+        }
+        canvas{
+            height: 100vh;
+            width: 100vw;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        let scene, camera, renderer, face, bones;
+        
+        function init(){
+            //initalisation function
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x33dddd);
+
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 1, 5000);
+            camera.position.z = 100;
+            camera.position.y = 20;
+
+            light = new THREE.PointLight(0xc4c4c4, 3);
+            light.position.set(0,300,500);
+            scene.add(light);
+
+            renderer = new THREE.WebGLRenderer({antialias:true});
+            renderer.setSize(window.innerWidth,window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            let loader = new THREE.GLTFLoader();
+            loader.load("face.gltf", function(gltf){
+                gltf.scene.name = "Face";
+                scene.add(gltf.scene);
+                face = scene.getObjectByName("Face");
+                bones = face.children[0].children[1];
+                bones.head = bones.children[0];
+                bones.jaw = bones.children[1];
+                animation();
+            })
+
+
+        }
+
+        function animation(){
+            //animation loop 
+            updateFace();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animation);
+        }
+
+        function updateFace(){
+            //updates facial position and bones based on webcam feed
+            //bones.jaw.position.z -= .00001
+        }
+
+        init();
+    </script>
+</body>
+</html>

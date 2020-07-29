@@ -15,9 +15,9 @@ limitations under the License.
 
 <head>
   <!-- Load three.js -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.106.2/build/three.min.js"></script>
-<!-- Load scatter-gl.js -->
-<script src="https://cdn.jsdelivr.net/npm/scatter-gl@0.0.1/lib/scatter-gl.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.106.2/build/three.min.js"></script>
+  <!-- Load scatter-gl.js -->
+  <script src="https://cdn.jsdelivr.net/npm/scatter-gl@0.0.1/lib/scatter-gl.min.js"></script>
 <style>
   .canvas-wrapper, #scatter-gl-container {
     display: inline-block;
@@ -46,7 +46,7 @@ limitations under the License.
     <div class="container">
       <div class="canvas-wrapper">
         <canvas id="output" style="
-          border: 5px yellow solid;
+          border: 15px black solid;
           margin-top: 5vh;
         ">
         </canvas>
@@ -59,6 +59,11 @@ limitations under the License.
           ">
         </video>
       </div>
+      <div id="debug" style="
+        float: right;
+        padding-right: 10vw;
+        padding-top: 15vh;
+        font-size: 32px;">Middle : </div>
       <div id="scatter-gl-container"></div>
     </div>
   </div>

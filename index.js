@@ -16,7 +16,6 @@
  */
 
 import * as facemesh from '@tensorflow-models/facemesh';
-import Stats from 'stats.js';
 import * as tf from '@tensorflow/tfjs-core';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 // TODO(annxingyuan): read version from tfjsWasm directly once
@@ -52,12 +51,25 @@ function drawPath(ctx, points, closePath) {
 let model, ctx, videoWidth, videoHeight, video, canvas,
     scatterGLHasInitialized = false, scatterGL;
 
-const VIDEO_SIZE = 300;
+
+// visual && point config
+const config = {
+  key_point_color: 'red',
+  point_color: 'lime',
+  point_radius: 2,
+  line_color: 'hotpink',
+  line_width: 2.5,
+  show_labels: false,
+  far_left: 454,
+  far_right: 234,
+  middle: 4
+};
+
+const VIDEO_SIZE = 800;
 const mobile = isMobile();
 // Don't render the point cloud on mobile in order to maximize performance and
 // to avoid crowding limited screen space.
 const renderPointcloud = mobile === false;
-const stats = new Stats();
 const state = {
   backend: 'wasm',
   maxFaces: 1,
@@ -91,7 +103,6 @@ async function setupCamera() {
 }
 
 async function renderPrediction() {
-  stats.begin();
 
   const predictions = await model.estimateFaces(video);
   ctx.drawImage(
@@ -111,14 +122,39 @@ async function renderPrediction() {
           drawPath(ctx, points, true);
         }
       } else {
+
+        //normalise around the middle point, for face roll angle.
+
+        document.querySelector('#debug').innerHTML = "Middle : "+ Math.floor(keypoints[config.middle][0]) + ", " + Math.floor(keypoints[config.middle][1])
+        + "<br> Left: "
+        + "<br> Right: ";
+
+
         for (let i = 0; i < keypoints.length; i++) {
           const x = keypoints[i][0];
           const y = keypoints[i][1];
 
+          if(i == config.far_left || i == config.far_right || i == config.middle ){
+            ctx.fillStyle = config.key_point_color;
+          }else{
+            ctx.fillStyle = config.point_color;
+          }
+
           ctx.beginPath();
-          ctx.arc(x, y, 1 /* radius */, 0, 2 * Math.PI);
+          ctx.arc(x, y, config.point_radius, 0, 2 * Math.PI);
+          if(config.show_labels)
+          {
+            ctx.fillText(i, x, y);
+          }
           ctx.fill();
         }
+
+        // line between FL & FR
+        ctx.beginPath();
+        ctx.moveTo(keypoints[config.far_right][0], keypoints[config.far_right][1]);
+        ctx.lineTo(keypoints[config.far_left][0], keypoints[config.far_left][1]);
+        ctx.stroke();
+
       }
     });
 
@@ -143,15 +179,12 @@ async function renderPrediction() {
     }
   }
 
-  stats.end();
   requestAnimationFrame(renderPrediction);
 };
 
 async function main() {
   await tf.setBackend(state.backend);
 
-  stats.showPanel(0);  // 0: fps, 1: ms, 2: mb, 3+: custom
-  document.getElementById('main').appendChild(stats.dom);
 
   await setupCamera();
   video.play();
@@ -169,9 +202,10 @@ async function main() {
   ctx = canvas.getContext('2d');
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
-  ctx.fillStyle = 'yellow';
-  ctx.strokeStyle = '#32EEDB';
-  ctx.lineWidth = 0.5;
+
+  ctx.fillStyle = config.point_color;
+  ctx.strokeStyle = config.line_color;
+  ctx.lineWidth = config.line_width;
 
   model = await facemesh.load({maxFaces: state.maxFaces});
   renderPrediction();

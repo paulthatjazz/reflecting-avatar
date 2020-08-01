@@ -62,6 +62,8 @@ const config = {
   show_labels: false,
   far_left: 454,
   far_right: 234,
+  eye_level: 6,
+  mouth_level: 0,
   middle: 4
 };
 
@@ -125,16 +127,38 @@ async function renderPrediction() {
 
         //normalise around the middle point, for face roll angle.
 
-        document.querySelector('#debug').innerHTML = "Middle : "+ Math.floor(keypoints[config.middle][0]) + ", " + Math.floor(keypoints[config.middle][1])
-        + "<br> Left: "
-        + "<br> Right: ";
+        let x_dis = Math.floor(keypoints[config.far_left][0]) - Math.floor(keypoints[config.far_right][0]);
+        let normalised_mid_x = Math.floor(keypoints[config.middle][0]) - (Math.floor(keypoints[config.far_right][0]));
+
+        
+        let y_dis = Math.floor(keypoints[config.mouth_level][1]) - Math.floor(keypoints[config.eye_level][1]);
+        let normalised_mid_y = Math.floor(keypoints[config.middle][1]) - (Math.floor(keypoints[config.eye_level][1]));
+
+        //percentage representing faceroll angle X-Axis 
+
+        let p_mid_x = normalised_mid_x/(x_dis/100)
+
+        //percentage representing faceroll angle Y-Axis
+
+        let p_mid_y = normalised_mid_y/(y_dis/100)
+
+        let tilt = Math.floor(keypoints[config.far_left][1]) - Math.floor(keypoints[config.far_right][1]);
+
+
+
+        document.querySelector('#debug').innerHTML = "<h2>Face Roll Angle Values</h2><br>Middle (Abs) : "+ Math.floor(keypoints[config.middle][0]) + ", " + Math.floor(keypoints[config.middle][1])
+        + "<br> Distance(X): " + x_dis
+        + "<br> X roll: " + normalised_mid_x + " (" + Math.floor(p_mid_x) + "%)"
+        + "<br> Distance(Y): " + y_dis
+        + "<br> Y roll: " + normalised_mid_y + " (" + Math.floor(p_mid_y) + "%)"
+        + "<br> Tilt:" + tilt;
 
 
         for (let i = 0; i < keypoints.length; i++) {
           const x = keypoints[i][0];
           const y = keypoints[i][1];
 
-          if(i == config.far_left || i == config.far_right || i == config.middle ){
+          if(i == config.far_left || i == config.far_right || i == config.middle || i == config.eye_level || i == config.mouth_level){
             ctx.fillStyle = config.key_point_color;
           }else{
             ctx.fillStyle = config.point_color;

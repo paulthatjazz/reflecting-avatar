@@ -72,6 +72,14 @@ const config = {
 	middle: 4
 };
 
+let faceroll = {
+	abs_x: 0,
+	abs_y: 0, //face position (X,Y)
+	tilt: 0, //tilt angle
+	roll_x: 0,
+	roll_y: 0 //roll angle (X,Y)
+};
+
 const VIDEO_SIZE = 800;
 const mobile = isMobile();
 // Don't render the point cloud on mobile in order to maximize performance and
@@ -138,35 +146,38 @@ async function renderPrediction() {
 
 				//percentage representing faceroll angle X-Axis
 
-				let p_mid_x = normalised_mid_x / (x_dis / 100);
+				faceroll.roll_x = normalised_mid_x / (x_dis / 100);
 
 				//percentage representing faceroll angle Y-Axis
 
-				let p_mid_y = normalised_mid_y / (y_dis / 100);
+				faceroll.roll_y = normalised_mid_y / (y_dis / 100);
 
-				let tilt = Math.floor(keypoints[config.far_left][1]) - Math.floor(keypoints[config.far_right][1]);
+				faceroll.tilt = Math.floor(keypoints[config.far_left][1]) - Math.floor(keypoints[config.far_right][1]);
+
+				faceroll.abs_x = keypoints[config.middle][0];
+				faceroll.abs_y = keypoints[config.middle][1];
 
 				document.querySelector('#debug').innerHTML =
 					'<h2>Face Roll Angle Values</h2><br>Middle (Abs) : ' +
-					Math.floor(keypoints[config.middle][0]) +
+					Math.floor(faceroll.abs_x) +
 					', ' +
-					Math.floor(keypoints[config.middle][1]) +
+					Math.floor(faceroll.abs_y) +
 					'<br> Distance(X): ' +
 					x_dis +
 					'<br> X roll: ' +
 					normalised_mid_x +
 					' (' +
-					Math.floor(p_mid_x) +
+					Math.floor(faceroll.roll_x) +
 					'%)' +
 					'<br> Distance(Y): ' +
 					y_dis +
 					'<br> Y roll: ' +
 					normalised_mid_y +
 					' (' +
-					Math.floor(p_mid_y) +
+					Math.floor(faceroll.roll_y) +
 					'%)' +
 					'<br> Tilt:' +
-					tilt;
+					faceroll.tilt;
 
 				for (let i = 0; i < keypoints.length; i++) {
 					const x = keypoints[i][0];

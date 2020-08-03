@@ -61,7 +61,7 @@ let model,
 const config = {
 	key_point_color: 'red',
 	point_color: 'lime',
-	point_radius: 2,
+	point_radius: 0.5,
 	line_color: 'hotpink',
 	line_width: 2.5,
 	show_labels: false,
@@ -80,7 +80,7 @@ let faceroll = {
 	roll_y: 0 //roll angle (X,Y)
 };
 
-const VIDEO_SIZE = 800;
+const VIDEO_SIZE = 200;
 const mobile = isMobile();
 // Don't render the point cloud on mobile in order to maximize performance and
 // to avoid crowding limited screen space.

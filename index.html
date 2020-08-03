@@ -14,40 +14,23 @@ limitations under the License.
 ==============================================================================-->
 
 <head>
-  <!-- Load three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.106.2/build/three.min.js"></script>
-  <!-- Load scatter-gl.js -->
-  <script src="https://cdn.jsdelivr.net/npm/scatter-gl@0.0.1/lib/scatter-gl.min.js"></script>
 <style>
   .canvas-wrapper, #scatter-gl-container {
     display: inline-block;
     vertical-align: top;
   }
-
-  #scatter-gl-container {
-    border: solid 1px black;
-    position: relative;
-  }
-
-  /* center the canvas within its wrapper */
-  #scatter-gl-container canvas {
-    transform: translate3d(-50%, -50%, 0);
-    left: 50%;
-    top: 50%;
-    position: absolute;
-  }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r92/examples/js/loaders/GLTFLoader.js"></script>
+<title>Virtual Avatar</title>
 </head>
 <body>
   <div id="main">
-    <div class="t" style="position: absolute; font-size: 32px; color: white; top: 7vh; left: 2vw; font-family: Arial">
-      Input
-    </div>
     <div class="container">
       <div class="canvas-wrapper">
         <canvas id="output" style="
-          border: 15px black solid;
-          margin-top: 5vh;
+          border: 5px black solid;
+          margin-top: 1vh;
         ">
         </canvas>
         <video id="video" playsinline style="
@@ -62,15 +45,27 @@ limitations under the License.
       <div id="debug" style="
         float: right;
         padding: 1%;
-        margin-right: 5vw;
-        margin-top: 10vh;
-        font-size: 32px;
+        margin-right: 1vw;
+        margin-top: 1vh;
+        font-size: 14px;
         background-color: Lavender;
         text-align: center;
-        font-family: Verdana, Geneva, Tahoma, sans-serif;">Loading.. </div>
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        border: fuchsia 3px solid;">Loading.. </div>
       <div id="scatter-gl-container"></div>
     </div>
   </div>
+  <canvas id="facerig" style="
+    position: absolute;
+    background-color: lightblue;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;">
+  </canvas>
+  <script>
+  </script>
 </body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
 <script src="index.js"></script>

@@ -20,51 +20,56 @@ import * as tf from '@tensorflow/tfjs-core';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 // TODO(annxingyuan): read version from tfjsWasm directly once
 // https://github.com/tensorflow/tfjs/pull/2819 is merged.
-import {version} from '@tensorflow/tfjs-backend-wasm/dist/version';
+import { version } from '@tensorflow/tfjs-backend-wasm/dist/version';
 
-import {TRIANGULATION} from './triangulation';
+import { TRIANGULATION } from './triangulation';
 
 tfjsWasm.setWasmPath(
-    `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${
-        version}/dist/tfjs-backend-wasm.wasm`);
+	`https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${version}/dist/tfjs-backend-wasm.wasm`
+);
 
 function isMobile() {
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  return isAndroid || isiOS;
+	const isAndroid = /Android/i.test(navigator.userAgent);
+	const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+	return isAndroid || isiOS;
 }
 
 function drawPath(ctx, points, closePath) {
-  const region = new Path2D();
-  region.moveTo(points[0][0], points[0][1]);
-  for (let i = 1; i < points.length; i++) {
-    const point = points[i];
-    region.lineTo(point[0], point[1]);
-  }
+	const region = new Path2D();
+	region.moveTo(points[0][0], points[0][1]);
+	for (let i = 1; i < points.length; i++) {
+		const point = points[i];
+		region.lineTo(point[0], point[1]);
+	}
 
-  if (closePath) {
-    region.closePath();
-  }
-  ctx.stroke(region);
+	if (closePath) {
+		region.closePath();
+	}
+	ctx.stroke(region);
 }
 
-let model, ctx, videoWidth, videoHeight, video, canvas,
-    scatterGLHasInitialized = false, scatterGL;
-
+let model,
+	ctx,
+	videoWidth,
+	videoHeight,
+	video,
+	canvas,
+	scatterGLHasInitialized = false,
+	scatterGL;
 
 // visual && point config
 const config = {
-  key_point_color: 'red',
-  point_color: 'lime',
-  point_radius: 2,
-  line_color: 'hotpink',
-  line_width: 2.5,
-  show_labels: false,
-  far_left: 454,
-  far_right: 234,
-  eye_level: 6,
-  mouth_level: 0,
-  middle: 4
+	key_point_color: 'red',
+	point_color: 'lime',
+	point_radius: 2,
+	line_color: 'hotpink',
+	line_width: 2.5,
+	show_labels: false,
+	far_left: 454,
+	far_right: 234,
+	eye_level: 6,
+	mouth_level: 0,
+	middle: 4
 };
 
 const VIDEO_SIZE = 800;
@@ -73,167 +78,178 @@ const mobile = isMobile();
 // to avoid crowding limited screen space.
 const renderPointcloud = mobile === false;
 const state = {
-  backend: 'wasm',
-  maxFaces: 1,
-  triangulateMesh: false
+	backend: 'wasm',
+	maxFaces: 1,
+	triangulateMesh: false
 };
 
 if (renderPointcloud) {
-  state.renderPointcloud = true;
+	state.renderPointcloud = true;
 }
 
 async function setupCamera() {
-  video = document.getElementById('video');
+	video = document.getElementById('video');
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    'audio': false,
-    'video': {
-      facingMode: 'user',
-      // Only setting the video to a specified size in order to accommodate a
-      // point cloud, so on mobile devices accept the default size.
-      width: mobile ? undefined : VIDEO_SIZE,
-      height: mobile ? undefined : VIDEO_SIZE
-    },
-  });
-  video.srcObject = stream;
+	const stream = await navigator.mediaDevices.getUserMedia({
+		audio: false,
+		video: {
+			facingMode: 'user',
+			// Only setting the video to a specified size in order to accommodate a
+			// point cloud, so on mobile devices accept the default size.
+			width: mobile ? undefined : VIDEO_SIZE,
+			height: mobile ? undefined : VIDEO_SIZE
+		}
+	});
+	video.srcObject = stream;
 
-  return new Promise((resolve) => {
-    video.onloadedmetadata = () => {
-      resolve(video);
-    };
-  });
+	return new Promise((resolve) => {
+		video.onloadedmetadata = () => {
+			resolve(video);
+		};
+	});
 }
 
 async function renderPrediction() {
+	const predictions = await model.estimateFaces(video);
+	ctx.drawImage(video, 0, 0, videoWidth, videoHeight, 0, 0, canvas.width, canvas.height);
 
-  const predictions = await model.estimateFaces(video);
-  ctx.drawImage(
-      video, 0, 0, videoWidth, videoHeight, 0, 0, canvas.width, canvas.height);
+	if (predictions.length > 0) {
+		predictions.forEach((prediction) => {
+			const keypoints = prediction.scaledMesh;
 
-  if (predictions.length > 0) {
-    predictions.forEach(prediction => {
-      const keypoints = prediction.scaledMesh;
+			if (state.triangulateMesh) {
+				for (let i = 0; i < TRIANGULATION.length / 3; i++) {
+					const points = [ TRIANGULATION[i * 3], TRIANGULATION[i * 3 + 1], TRIANGULATION[i * 3 + 2] ].map(
+						(index) => keypoints[index]
+					);
 
-      if (state.triangulateMesh) {
-        for (let i = 0; i < TRIANGULATION.length / 3; i++) {
-          const points = [
-            TRIANGULATION[i * 3], TRIANGULATION[i * 3 + 1],
-            TRIANGULATION[i * 3 + 2]
-          ].map(index => keypoints[index]);
+					drawPath(ctx, points, true);
+				}
+			} else {
+				//normalise around the middle point, for face roll angle.
 
-          drawPath(ctx, points, true);
-        }
-      } else {
+				let x_dis = Math.floor(keypoints[config.far_left][0]) - Math.floor(keypoints[config.far_right][0]);
+				let normalised_mid_x =
+					Math.floor(keypoints[config.middle][0]) - Math.floor(keypoints[config.far_right][0]);
 
-        //normalise around the middle point, for face roll angle.
+				let y_dis = Math.floor(keypoints[config.mouth_level][1]) - Math.floor(keypoints[config.eye_level][1]);
+				let normalised_mid_y =
+					Math.floor(keypoints[config.middle][1]) - Math.floor(keypoints[config.eye_level][1]);
 
-        let x_dis = Math.floor(keypoints[config.far_left][0]) - Math.floor(keypoints[config.far_right][0]);
-        let normalised_mid_x = Math.floor(keypoints[config.middle][0]) - (Math.floor(keypoints[config.far_right][0]));
+				//percentage representing faceroll angle X-Axis
 
-        
-        let y_dis = Math.floor(keypoints[config.mouth_level][1]) - Math.floor(keypoints[config.eye_level][1]);
-        let normalised_mid_y = Math.floor(keypoints[config.middle][1]) - (Math.floor(keypoints[config.eye_level][1]));
+				let p_mid_x = normalised_mid_x / (x_dis / 100);
 
-        //percentage representing faceroll angle X-Axis 
+				//percentage representing faceroll angle Y-Axis
 
-        let p_mid_x = normalised_mid_x/(x_dis/100)
+				let p_mid_y = normalised_mid_y / (y_dis / 100);
 
-        //percentage representing faceroll angle Y-Axis
+				let tilt = Math.floor(keypoints[config.far_left][1]) - Math.floor(keypoints[config.far_right][1]);
 
-        let p_mid_y = normalised_mid_y/(y_dis/100)
+				document.querySelector('#debug').innerHTML =
+					'<h2>Face Roll Angle Values</h2><br>Middle (Abs) : ' +
+					Math.floor(keypoints[config.middle][0]) +
+					', ' +
+					Math.floor(keypoints[config.middle][1]) +
+					'<br> Distance(X): ' +
+					x_dis +
+					'<br> X roll: ' +
+					normalised_mid_x +
+					' (' +
+					Math.floor(p_mid_x) +
+					'%)' +
+					'<br> Distance(Y): ' +
+					y_dis +
+					'<br> Y roll: ' +
+					normalised_mid_y +
+					' (' +
+					Math.floor(p_mid_y) +
+					'%)' +
+					'<br> Tilt:' +
+					tilt;
 
-        let tilt = Math.floor(keypoints[config.far_left][1]) - Math.floor(keypoints[config.far_right][1]);
+				for (let i = 0; i < keypoints.length; i++) {
+					const x = keypoints[i][0];
+					const y = keypoints[i][1];
 
+					if (
+						i == config.far_left ||
+						i == config.far_right ||
+						i == config.middle ||
+						i == config.eye_level ||
+						i == config.mouth_level
+					) {
+						ctx.fillStyle = config.key_point_color;
+					} else {
+						ctx.fillStyle = config.point_color;
+					}
 
+					ctx.beginPath();
+					ctx.arc(x, y, config.point_radius, 0, 2 * Math.PI);
+					if (config.show_labels) {
+						ctx.fillText(i, x, y);
+					}
+					ctx.fill();
+				}
 
-        document.querySelector('#debug').innerHTML = "<h2>Face Roll Angle Values</h2><br>Middle (Abs) : "+ Math.floor(keypoints[config.middle][0]) + ", " + Math.floor(keypoints[config.middle][1])
-        + "<br> Distance(X): " + x_dis
-        + "<br> X roll: " + normalised_mid_x + " (" + Math.floor(p_mid_x) + "%)"
-        + "<br> Distance(Y): " + y_dis
-        + "<br> Y roll: " + normalised_mid_y + " (" + Math.floor(p_mid_y) + "%)"
-        + "<br> Tilt:" + tilt;
+				// line between FL & FR
+				ctx.beginPath();
+				ctx.moveTo(keypoints[config.far_right][0], keypoints[config.far_right][1]);
+				ctx.lineTo(keypoints[config.far_left][0], keypoints[config.far_left][1]);
+				ctx.stroke();
+			}
+		});
 
+		if (renderPointcloud && state.renderPointcloud && scatterGL != null) {
+			const pointsData = predictions.map((prediction) => {
+				let scaledMesh = prediction.scaledMesh;
+				return scaledMesh.map((point) => [ -point[0], -point[1], -point[2] ]);
+			});
 
-        for (let i = 0; i < keypoints.length; i++) {
-          const x = keypoints[i][0];
-          const y = keypoints[i][1];
+			let flattenedPointsData = [];
+			for (let i = 0; i < pointsData.length; i++) {
+				flattenedPointsData = flattenedPointsData.concat(pointsData[i]);
+			}
+			const dataset = new ScatterGL.Dataset(flattenedPointsData);
 
-          if(i == config.far_left || i == config.far_right || i == config.middle || i == config.eye_level || i == config.mouth_level){
-            ctx.fillStyle = config.key_point_color;
-          }else{
-            ctx.fillStyle = config.point_color;
-          }
+			if (!scatterGLHasInitialized) {
+				scatterGL.render(dataset);
+			} else {
+				scatterGL.updateDataset(dataset);
+			}
+			scatterGLHasInitialized = true;
+		}
+	}
 
-          ctx.beginPath();
-          ctx.arc(x, y, config.point_radius, 0, 2 * Math.PI);
-          if(config.show_labels)
-          {
-            ctx.fillText(i, x, y);
-          }
-          ctx.fill();
-        }
-
-        // line between FL & FR
-        ctx.beginPath();
-        ctx.moveTo(keypoints[config.far_right][0], keypoints[config.far_right][1]);
-        ctx.lineTo(keypoints[config.far_left][0], keypoints[config.far_left][1]);
-        ctx.stroke();
-
-      }
-    });
-
-    if (renderPointcloud && state.renderPointcloud && scatterGL != null) {
-      const pointsData = predictions.map(prediction => {
-        let scaledMesh = prediction.scaledMesh;
-        return scaledMesh.map(point => ([-point[0], -point[1], -point[2]]));
-      });
-
-      let flattenedPointsData = [];
-      for (let i = 0; i < pointsData.length; i++) {
-        flattenedPointsData = flattenedPointsData.concat(pointsData[i]);
-      }
-      const dataset = new ScatterGL.Dataset(flattenedPointsData);
-
-      if (!scatterGLHasInitialized) {
-        scatterGL.render(dataset);
-      } else {
-        scatterGL.updateDataset(dataset);
-      }
-      scatterGLHasInitialized = true;
-    }
-  }
-
-  requestAnimationFrame(renderPrediction);
-};
+	requestAnimationFrame(renderPrediction);
+}
 
 async function main() {
-  await tf.setBackend(state.backend);
+	await tf.setBackend(state.backend);
 
+	await setupCamera();
+	video.play();
+	videoWidth = video.videoWidth;
+	videoHeight = video.videoHeight;
+	video.width = videoWidth;
+	video.height = videoHeight;
 
-  await setupCamera();
-  video.play();
-  videoWidth = video.videoWidth;
-  videoHeight = video.videoHeight;
-  video.width = videoWidth;
-  video.height = videoHeight;
+	canvas = document.getElementById('output');
+	canvas.width = videoWidth;
+	canvas.height = videoHeight;
+	const canvasContainer = document.querySelector('.canvas-wrapper');
+	canvasContainer.style = `width: ${videoWidth}px; height: ${videoHeight}px`;
 
-  canvas = document.getElementById('output');
-  canvas.width = videoWidth;
-  canvas.height = videoHeight;
-  const canvasContainer = document.querySelector('.canvas-wrapper');
-  canvasContainer.style = `width: ${videoWidth}px; height: ${videoHeight}px`;
+	ctx = canvas.getContext('2d');
+	ctx.translate(canvas.width, 0);
+	ctx.scale(-1, 1);
 
-  ctx = canvas.getContext('2d');
-  ctx.translate(canvas.width, 0);
-  ctx.scale(-1, 1);
+	ctx.fillStyle = config.point_color;
+	ctx.strokeStyle = config.line_color;
+	ctx.lineWidth = config.line_width;
 
-  ctx.fillStyle = config.point_color;
-  ctx.strokeStyle = config.line_color;
-  ctx.lineWidth = config.line_width;
-
-  model = await facemesh.load({maxFaces: state.maxFaces});
-  renderPrediction();
-
-};
+	model = await facemesh.load({ maxFaces: state.maxFaces });
+	renderPrediction();
+}
 
 main();

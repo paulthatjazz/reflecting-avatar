@@ -232,6 +232,8 @@ async function renderPrediction() {
 		}
 	}
 
+	frav = faceroll; // update front end with face roll angle values.
+
 	requestAnimationFrame(renderPrediction);
 }
 

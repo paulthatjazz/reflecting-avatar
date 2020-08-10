@@ -65,9 +65,14 @@ limitations under the License.
     z-index: -1;">
   </canvas>
   <script>
-    let scene, camera, renderer, face, bones, frav;
+    let scene, camera, renderer, face, bones, frav, x_face, y_face;
     //hosted version, need to fix... 
     let face_location = "http://127.0.0.1:8887/face.gltf";
+
+    const x_angle = .7;
+    const y_angle = .7;
+    const tilt_angle = 0.02;
+    // controls the strength of rotation
 
     function initalise(){
       scene = new THREE.Scene();
@@ -82,7 +87,7 @@ limitations under the License.
       scene.add(light);
 
       renderer = new THREE.WebGLRenderer({ canvas: facerig, antialias: true});
-      //renderer.setSize(window.innerWidth,window.innerHeight);
+      renderer.setSize(window.innerWidth,window.innerHeight);
       //document.body.appendChild(renderer.domElement);
       
       let loader = new THREE.GLTFLoader();
@@ -93,6 +98,8 @@ limitations under the License.
           bones = face.children[0].children[1];
           bones.head = bones.children[0];
           bones.jaw = bones.children[1];
+          x_face = bones.head.rotation.y;
+          y_face = bones.head.rotation.x;
           animation();
       })
 
@@ -106,8 +113,13 @@ limitations under the License.
     }
 
     function updateFace(){
-      if(typeof fr !== 'undefined'){
-        bones.head.rotation.z = frav.tilt/100;
+      if(typeof frav !== 'undefined'){
+        bones.head.rotation.z = (frav.tilt * tilt_angle);
+        let x_roll = ( frav.roll_x / 50 ) - 1;  //normalises x roll to a decimal averaging between -1 and 1, 0 = 50%
+        bones.head.rotation.y = x_face - (x_roll * x_angle);
+
+        let y_roll = ( frav.roll_y / 50) - 1;
+        bones.head.rotation.x =  y_face + (y_roll * y_angle);
         //bones.head.rotation.x = 0 + (fr.roll_y-50)/1000;
       }
       //console.log(fr);

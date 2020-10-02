@@ -60,8 +60,9 @@ let model,
 // visual && point config
 const config = {
 	key_point_color: 'red',
-	point_color: 'lime',
-	point_radius: 0.5,
+	key_point_color_mouth: 'yellow',
+	point_color: 'black',
+	point_radius: 1.5,
 	line_color: 'hotpink',
 	line_width: 2.5,
 	show_labels: false,
@@ -72,6 +73,11 @@ const config = {
 	middle: 4
 };
 
+const mouth_tm = 13;
+//const mouth = [ 78, 14, 311, 402, 81, 178, 308 ];
+
+const mouth = [ 14 ];
+
 let faceroll = {
 	abs_x: 0,
 	abs_y: 0, //face position (X,Y)
@@ -80,7 +86,7 @@ let faceroll = {
 	roll_y: 0 //roll angle (X,Y)
 };
 
-const VIDEO_SIZE = 200;
+const VIDEO_SIZE = 400;
 const mobile = isMobile();
 // Don't render the point cloud on mobile in order to maximize performance and
 // to avoid crowding limited screen space.
@@ -157,6 +163,19 @@ async function renderPrediction() {
 				faceroll.abs_x = keypoints[config.middle][0];
 				faceroll.abs_y = keypoints[config.middle][1];
 
+				//top middle mouth will always = [0, 0]
+				let mouth_relative = [];
+				//normalise mouth values relative to top middle mouth
+				for (let x = 0; x < mouth.length; x++) {
+					mouth_relative.push([
+						keypoints[x][0] - keypoints[mouth_tm][0],
+						keypoints[x][1] - keypoints[mouth_tm][1],
+						keypoints[x][2] - keypoints[mouth_tm][2]
+					]);
+				}
+
+				mouth_ex = mouth_relative;
+
 				document.querySelector('#debug').innerHTML =
 					'<h2>Face Roll Angle Values</h2><br>Middle (Abs) : ' +
 					Math.floor(faceroll.abs_x) +
@@ -191,6 +210,10 @@ async function renderPrediction() {
 						i == config.mouth_level
 					) {
 						ctx.fillStyle = config.key_point_color;
+					} else if (mouth.includes(i)) {
+						ctx.fillStyle = config.key_point_color_mouth;
+					} else if (i == mouth_tm) {
+						ctx.fillStyle = 'limegreen';
 					} else {
 						ctx.fillStyle = config.point_color;
 					}

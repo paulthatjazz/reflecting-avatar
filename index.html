@@ -22,6 +22,10 @@ limitations under the License.
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r92/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.1.9/lib/p5.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/addons/p5.sound.js" integrity="sha512-KxzVm+IqxNNq0+SzT/zzd5PHxY4LPrN+v5gZJ6+JKqjeU3Cr4y/djAg5eNlKDWurn1SeKZpql/yeOMWblMSzOg==" crossorigin="anonymous"></script>
+<script src="phonetic.js"></script>
+
 <title>Virtual Avatar</title>
 </head>
 <body>
@@ -31,6 +35,7 @@ limitations under the License.
         <canvas id="output" style="
           border: 5px black solid;
           margin-top: 1vh;
+          border: fuchsia 3px solid;
         ">
         </canvas>
         <video id="video" playsinline style="
@@ -52,6 +57,10 @@ limitations under the License.
         text-align: center;
         font-family: Verdana, Geneva, Tahoma, sans-serif;
         border: fuchsia 3px solid;">Loading.. </div>
+      <canvas id="mouth-display" width="400" height="200" style="border: fuchsia 3px solid; position: absolute; top: 50vh; left: .5vw;
+      background-color: Lavender;">
+        Your browser does not support the HTML canvas tag.
+        </canvas>
       <div id="scatter-gl-container"></div>
     </div>
   </div>
@@ -65,18 +74,24 @@ limitations under the License.
     z-index: -1;">
   </canvas>
   <script>
-    let scene, camera, renderer, face, bones, frav, x_face, y_face;
+    let scene, camera, renderer, face, bones, frav, x_face, y_face, mouth_ex;
     //hosted version, need to fix... 
-    let face_location = "http://127.0.0.1:8887/face.gltf";
+    const face_location = "http://127.0.0.1:8887/face.gltf";
 
     const x_angle = .7;
     const y_angle = .7;
-    const tilt_angle = 0.02;
+    const tilt_angle = 0.02;    
+    var c = document.getElementById("mouth-display")
+    ctxt = c.getContext("2d");
+    
+    var mid = [400/2 , 200/2];
     // controls the strength of rotation
 
     function initalise(){
+      //set up the scene, load in the model, set some variables
+
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x33dddd);
+      scene.background = new THREE.Color(0xC8FFD1);
 
       camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 1, 5000);
       camera.position.z = 100;
@@ -91,6 +106,9 @@ limitations under the License.
       //document.body.appendChild(renderer.domElement);
       
       let loader = new THREE.GLTFLoader();
+
+      
+
       loader.load(face_location, function(gltf){
           gltf.scene.name = "Face";
           scene.add(gltf.scene);
@@ -102,20 +120,48 @@ limitations under the License.
           y_face = bones.head.rotation.x;
           animation();
       })
+      mouth_ex_move();
 
+    }
+    
+    function mouth_ex_move(){
+      if(mouth_ex){
+        
+        ctxt.clearRect(0,0,400,200);
+        ctxt.beginPath();
+        ctxt.arc(mid[0], mid[1], 2, 0, 2 * Math.PI);
+        for (let x = 0; x < mouth_ex.length; x++) {
+          ctxt.arc(mid[0]+(5*mouth_ex[x][0]), mid[1]+(5*mouth_ex[x][1]), 2, 0, 2 * Math.PI);
+        }
+        ctxt.stroke();
+      }
+      requestAnimationFrame(mouth_ex_move);
     }
 
     function animation(){
+
         //animation loop 
        updateFace();
        renderer.render(scene, camera);
         requestAnimationFrame(animation);
     }
 
+    function touchStarted() {
+      if (getAudioContext().state !== 'running') {
+        getAudioContext().resume();
+        console.log('Audio Resumed!');
+      }
+    }
+
+    function soundClassification(){
+      
+    }
+
     function updateFace(){
+      // if frav is being updated from the webcam feed, update face
       if(typeof frav !== 'undefined'){
         bones.head.rotation.z = (frav.tilt * tilt_angle);
-        let x_roll = ( frav.roll_x / 50 ) - 1;  //normalises x roll to a decimal averaging between -1 and 1, 0 = 50%
+        let x_roll = ( frav.roll_x / 50 ) - 1; 
         bones.head.rotation.y = x_face - (x_roll * x_angle);
 
         let y_roll = ( frav.roll_y / 50) - 1;

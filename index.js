@@ -18,6 +18,7 @@
 import * as facemesh from '@tensorflow-models/facemesh';
 import * as tf from '@tensorflow/tfjs-core';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
+import * as knn from '@tensorflow-models/knn-classifier';
 // TODO(annxingyuan): read version from tfjsWasm directly once
 // https://github.com/tensorflow/tfjs/pull/2819 is merged.
 import { version } from '@tensorflow/tfjs-backend-wasm/dist/version';
@@ -74,9 +75,10 @@ const config = {
 };
 
 const mouth_tm = 13;
-//const mouth = [ 78, 14, 311, 402, 81, 178, 308 ];
+const mouth = [ 311, 308, 402, 14, 178, 78, 81 ];
+const knnClssfyr = knn.create();
 
-const mouth = [ 14 ];
+//const mouth = [ 78 ];
 
 let faceroll = {
 	abs_x: 0,
@@ -168,13 +170,32 @@ async function renderPrediction() {
 				//normalise mouth values relative to top middle mouth
 				for (let x = 0; x < mouth.length; x++) {
 					mouth_relative.push([
-						keypoints[x][0] - keypoints[mouth_tm][0],
-						keypoints[x][1] - keypoints[mouth_tm][1],
-						keypoints[x][2] - keypoints[mouth_tm][2]
+						Math.floor(keypoints[mouth_tm][0]) - Math.floor(keypoints[mouth[x]][0]),
+						Math.floor(keypoints[mouth_tm][1]) - Math.floor(keypoints[mouth[x]][1]),
+						Math.floor(keypoints[mouth_tm][2]) - Math.floor(keypoints[mouth[x]][2])
 					]);
 				}
 
 				mouth_ex = mouth_relative;
+
+				document.querySelector('#testout').innerHTML = 'Emotion : ' + 'N/A';
+				// Math.floor(keypoints[mouth_tm][0]) +
+				// '  -  ' +
+				// Math.floor(keypoints[mouth[0]][0]) +
+				// '  -  ' +
+				// Math.floor(mouth_relative[0][0]) +
+				// '<br>' +
+				// Math.floor(keypoints[mouth_tm][1]) +
+				// '  -  ' +
+				// Math.floor(keypoints[mouth[0]][1]) +
+				// '  -  ' +
+				// Math.floor(mouth_relative[0][1]) +
+				// '<br>' +
+				// Math.floor(keypoints[mouth_tm][2]) +
+				// '  -  ' +
+				// Math.floor(keypoints[mouth[0]][2]) +
+				// '  -  ' +
+				// Math.floor(mouth_relative[0][2]);
 
 				document.querySelector('#debug').innerHTML =
 					'<h2>Face Roll Angle Values</h2><br>Middle (Abs) : ' +

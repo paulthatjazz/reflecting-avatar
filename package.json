@@ -13,7 +13,8 @@
     "@tensorflow-models/knn-classifier": "^1.2.2",
     "@tensorflow/tfjs-backend-wasm": "^1.5.2-alpha1",
     "@tensorflow/tfjs-converter": "^1.6.1",
-    "@tensorflow/tfjs-core": "^1.2.1"
+    "@tensorflow/tfjs-core": "^1.2.1",
+    "ml-knn": "^3.0.0"
   },
   "scripts": {
     "watch": "cross-env NODE_ENV=development parcel index.html --no-hmr --target browser",

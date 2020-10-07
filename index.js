@@ -18,12 +18,13 @@
 import * as facemesh from '@tensorflow-models/facemesh';
 import * as tf from '@tensorflow/tfjs-core';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
-import * as knn from '@tensorflow-models/knn-classifier';
 // TODO(annxingyuan): read version from tfjsWasm directly once
 // https://github.com/tensorflow/tfjs/pull/2819 is merged.
 import { version } from '@tensorflow/tfjs-backend-wasm/dist/version';
 
 import { TRIANGULATION } from './triangulation';
+import { DATASET_FER } from './dataset';
+import KNN, * as knn from 'ml-knn';
 
 tfjsWasm.setWasmPath(
 	`https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${version}/dist/tfjs-backend-wasm.wasm`
@@ -76,7 +77,20 @@ const config = {
 
 const mouth_tm = 13;
 const mouth = [ 311, 308, 402, 14, 178, 78, 81 ];
-const knnClssfyr = knn.create();
+const mouth_labels = [ 'Neutral', 'Smile', 'Shock' ];
+let xs_concat = [];
+for (let x = 0; x < DATASET_FER.x.length; x++) {
+	var a;
+	for (let y = 0; y < DATASET_FER.x[x].length; y++) {
+		if (y == 0) {
+			a = DATASET_FER.x[x][y];
+		} else {
+			a.concat(DATASET_FER.x[x][y]);
+		}
+	}
+	xs_concat.push(a);
+}
+const mouthKnn = new KNN(xs_concat, DATASET_FER.y, { k: 3 });
 
 //const mouth = [ 78 ];
 
@@ -177,8 +191,16 @@ async function renderPrediction() {
 				}
 
 				mouth_ex = mouth_relative;
-
-				document.querySelector('#testout').innerHTML = 'Emotion : ' + 'N/A';
+				var a;
+				for (let x = 0; x < mouth_relative.length; x++) {
+					if (x == 0) {
+						a = mouth_relative[x];
+					} else {
+						a.concat(mouth_relative[x]);
+					}
+				}
+				var ans = mouthKnn.predict(a);
+				document.querySelector('#testout').innerHTML = 'Emotion : ' + mouth_labels[ans];
 				// Math.floor(keypoints[mouth_tm][0]) +
 				// '  -  ' +
 				// Math.floor(keypoints[mouth[0]][0]) +
@@ -306,6 +328,7 @@ async function main() {
 	ctx.lineWidth = config.line_width;
 
 	model = await facemesh.load({ maxFaces: state.maxFaces });
+
 	renderPrediction();
 }
 

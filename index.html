@@ -69,13 +69,14 @@ limitations under the License.
         background-color: Lavender;">
           Your browser does not support the HTML canvas tag.
         </canvas>
-        <div style="position: absolute; bottom: 5vh">
+        <div id="jsond" style="position: absolute; bottom: 5vh" hidden>
           <button onclick="t();">Save</button>
           <select name="" id="fer_c">
             <option value="0">Neutral</option>
             <option value="1">Smile</option>
             <option value="2">Shock</option>
           </select>
+          <button onclick="s();">DL</button>
         </div>
         <div id="testout" style="
         border: fuchsia 3px solid;
@@ -174,6 +175,21 @@ limitations under the License.
     function t(){
       xs.push(mouth_ex);
       ys.push(document.getElementById("fer_c").value)
+    }
+
+    function s(){
+      var data = {
+        x: xs,
+        y: ys
+      }
+      var json = JSON.stringify(data);
+      var blob = new Blob([json], {type: "application/json"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.download = "dataset_fer.json";
+      a.href = url;
+      a.textContent = "Download";
+      document.getElementById('jsond').appendChild(a);
     }
 
     function mouth_ex_move(){

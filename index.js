@@ -23,7 +23,8 @@ import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
 import { version } from '@tensorflow/tfjs-backend-wasm/dist/version';
 
 import { TRIANGULATION } from './triangulation';
-import { DATASET_FER } from './dataset';
+import { DATASET_FER, DATASET_PHO } from './dataset';
+import {init_rnn} from './rnn';
 import KNN, * as knn from 'ml-knn';
 
 tfjsWasm.setWasmPath(
@@ -79,6 +80,9 @@ const mouth_tm = 13;
 const mouth = [ 311, 308, 402, 14, 178, 78, 81 ];
 const mouth_labels = [ 'Neutral', 'Smile', 'Shock' ];
 let xs_concat = [];
+let xs_concat2 = [];
+
+//preprocessing dataset
 for (let x = 0; x < DATASET_FER.x.length; x++) {
 	var a;
 	for (let y = 0; y < DATASET_FER.x[x].length; y++) {
@@ -90,7 +94,21 @@ for (let x = 0; x < DATASET_FER.x.length; x++) {
 	}
 	xs_concat.push(a);
 }
-const mouthKnn = new KNN(xs_concat, DATASET_FER.y, { k: 3 });
+const mouthKnn = new KNN(xs_concat, DATASET_FER.y, { k: 14 });
+
+for (let x = 0; x < DATASET_PHO.x.length; x++) {
+	var a;
+	for (let y = 0; y < DATASET_PHO.x[x].length; y++) {
+		if (y == 0) {
+			a = DATASET_PHO.x[x][y];
+		} else {
+			a.concat(DATASET_PHO.x[x][y]);
+		}
+	}
+	xs_concat2.push(a);
+}
+const mouthKnn2 = new KNN(xs_concat2, DATASET_PHO.y, { k: 3 });
+init_rnn();
 
 //const mouth = [ 78 ];
 
@@ -200,7 +218,17 @@ async function renderPrediction() {
 					}
 				}
 				var ans = mouthKnn.predict(a);
-				document.querySelector('#testout').innerHTML = 'Emotion : ' + mouth_labels[ans];
+				var ans2 = mouthKnn2.predict(a);
+
+				document.querySelector('#testout').innerHTML = 'Emotion : ' + mouth_labels[ans] + '<br> Mouth Shape:' + ans2;
+
+				eans = ans;
+
+				pho_p = ans2;
+
+				
+
+
 				// Math.floor(keypoints[mouth_tm][0]) +
 				// '  -  ' +
 				// Math.floor(keypoints[mouth[0]][0]) +

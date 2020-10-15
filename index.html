@@ -38,6 +38,18 @@ limitations under the License.
 </head>
 <body>
   <div id="main">
+    <div id="smile" style="position: absolute;
+          left: 25vw;
+          top: 45vh;"
+          hidden>
+      <img src="smile.png" height="200px" width="200px">
+    </div>
+    <div id="pog" style="position: absolute;
+          left: 65vw;
+          top: 45vh;"
+          hidden>
+      <img src="pog.png" height="200px" width="200px">
+    </div>
     <div class="container">
       <div class="canvas-wrapper">
         <canvas id="output" style="
@@ -78,6 +90,22 @@ limitations under the License.
           </select>
           <button onclick="s();">DL</button>
         </div>
+        <div id="jsond-a" style="position: absolute; bottom: 5vh" hidden>
+          <button onclick="t_3();">Save</button>
+          <select name="" id="pho_c">
+            <option value="0">N</option>
+            <option value="1">A1</option>
+            <option value="2">A2</option>
+            <option value="3">O1</option>
+            <option value="4">O2</option>
+          </select>
+          <button onclick="s_3();">DL</button>
+        </div>
+        <div id="audiod" style="position: absolute; bottom: 5vh" hidden>
+          <button onclick="star();">Start</button>
+          <span id="dssize"></span>
+          <button onclick="s2();">DL</button>
+        </div>
         <div id="testout" style="
         border: fuchsia 3px solid;
         background-color: Lavender; 
@@ -104,7 +132,7 @@ limitations under the License.
     z-index: -1;">
   </canvas>
   <script>
-    let scene, camera, renderer, face, bones, frav, x_face, y_face, mouth_ex;
+    let scene, camera, renderer, face, bones, frav, x_face, y_face, x_jaw, mouth_ex, pho_p, eans;
 
     let tft, mic;
     //hosted version, need to fix... 
@@ -113,14 +141,18 @@ limitations under the License.
     const x_angle = .7;
     const y_angle = .7;
     const tilt_angle = 0.02;    
+    const micThreshold = 0.003;
     var c = document.getElementById("mouth-display")
     ctxt = c.getContext("2d");
     
 	  ctxt.strokeStyle = "orange"
     ctxt.lineWidth = 4.5;
 
+    var record = false;
 
-    
+    var xs_ = [];
+    var ys_ = [];
+
     var xs = [];
     var ys = [];
 
@@ -154,7 +186,8 @@ limitations under the License.
           face = scene.getObjectByName("Face");
           bones = face.children[0].children[1];
           bones.head = bones.children[0];
-          bones.jaw = bones.children[1];
+          bones.jaw = bones.head.children[0];
+          x_jaw = bones.jaw.rotation.x;
           x_face = bones.head.rotation.y;
           y_face = bones.head.rotation.x;
           animation();
@@ -162,6 +195,8 @@ limitations under the License.
       mouth_ex_move();
 
     }
+
+    function star(){ record=!record;}
 
     function setup(){
       createCanvas(400, 250);
@@ -177,6 +212,11 @@ limitations under the License.
       ys.push(document.getElementById("fer_c").value)
     }
 
+    function t_3(){
+      xs.push(mouth_ex);
+      ys.push(document.getElementById("pho_c").value)
+    }
+
     function s(){
       var data = {
         x: xs,
@@ -190,6 +230,36 @@ limitations under the License.
       a.href = url;
       a.textContent = "Download";
       document.getElementById('jsond').appendChild(a);
+    }
+
+    function s_3(){
+      var data = {
+        x: xs,
+        y: ys
+      }
+      var json = JSON.stringify(data);
+      var blob = new Blob([json], {type: "application/json"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.download = "dataset_pho.json";
+      a.href = url;
+      a.textContent = "Download";
+      document.getElementById('jsond-a').appendChild(a);
+    }
+
+    function s2(){
+      var data = {
+        x: xs_,
+        y: ys_
+      }
+      var json = JSON.stringify(data);
+      var blob = new Blob([json], {type: "application/json"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.download = "dataset_audio.json";
+      a.href = url;
+      a.textContent = "Download";
+      document.getElementById('audiod').appendChild(a);
     }
 
     function mouth_ex_move(){
@@ -226,7 +296,11 @@ limitations under the License.
     }
 
     function soundClassification(){
-      
+        if(record){
+          xs_.push(fft.analyze());
+          ys_.push(mouth_ex);
+          document.getElementById("dssize").innerHTML = xs_.length;
+        }
     }
 
     function draw(){
@@ -240,6 +314,7 @@ limitations under the License.
             vertex(i, map(spectrum[i], 0, 255, height, 0));
         }
         endShape();
+        soundClassification();
     }
 
     function updateFace(){
@@ -252,6 +327,19 @@ limitations under the License.
         let y_roll = ( frav.roll_y / 50) - 1;
         bones.head.rotation.x =  y_face + (y_roll * y_angle);
         //bones.head.rotation.x = 0 + (fr.roll_y-50)/1000;
+      }
+      if(mouth_ex){
+        bones.jaw.rotation.x = x_jaw + (mouth_ex[4][1] * -.03);
+        if (eans == 1) {
+          document.getElementById('smile').hidden = false;
+        }else{
+          document.getElementById('smile').hidden = true;
+        }
+        if (eans == 2) {
+          document.getElementById('pog').hidden = false;
+        }else{
+          document.getElementById('pog').hidden = true;
+        }
       }
       //console.log(fr);
       //updates facial position and bones based on webcam feed
